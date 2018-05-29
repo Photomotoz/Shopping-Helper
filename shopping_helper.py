@@ -30,22 +30,81 @@ import argparse
 import copy
 import json
 
+def choose_store(current_shopping_list, master_shopping_list, store_inventories):
+
+    chosen_store = "None"
+    highest_value = 0
+    results = dict()
+
+    for index, store in enumerate(store_inventories):
+
+        store_has = master_shopping_list.viewkeys() & (store["inventory"])
+        current_value = 0
+
+        for available_item in store_has:
+            if available_item not in current_shopping_list :
+                current_shopping_list[available_item] = 0
+
+            current_value += min(master_shopping_list[available_item] - current_shopping_list[available_item], store["inventory"][available_item])
+
+        if current_value > highest_value:
+            highest_value = current_value
+            chosen_store = store["name"]
+            store_index = index
+
+    results["store"] = chosen_store
+    results["store_index"] = store_index
+
+    return results
+
 
 # to help you get started, we have provided some boiler plate code
 def satisfy_shopping_list(shopping_list_json, inventory_json):
-    # find out minimum combination of stores that would satisfy shopping list
 
     # if shopping list is impossible to satisfy
     shopping_list_satisfiable = True
+
+    shopping_list_dict_orig = dict(shopping_list_json)
+    shopping_list_dict = dict()
+
+    temp_inventory = inventory_json["stores"]
+
+    chosen_stores = list()
+
+    while(shopping_list_dict_orig != shopping_list_dict):
+
+        results = choose_store(shopping_list_dict, shopping_list_dict_orig, temp_inventory)
+
+        chosen_store = results["store"];
+        store_index = results["store_index"];
+
+        chosen_stores.append(chosen_store)
+
+        store_ref = inventory_json["stores"][store_index]
+
+        store_has = shopping_list_json.viewkeys() & (store_ref["inventory"])
+
+        for available_item in store_has:
+            if available_item not in shopping_list_dict:
+                shopping_list_dict[available_item] = 0
+
+            shopping_list_dict[available_item] = min(shopping_list_dict_orig[available_item], shopping_list_dict[available_item] + temp_inventory[store_index]["inventory"][available_item])
+
+        del temp_inventory[store_index]
+
+        if(len(temp_inventory) == 1):
+            shopping_list_satisfiable = False
+            break
+
     if shopping_list_satisfiable:
         # print out number of stores and corresponding combinations
-        # num_stores = 0
-        # print "The shopping list can be satisfied by visiting {} store(s):".format(num_stores)
+        num_stores = len(chosen_stores)
+        print "The shopping list can be satisfied by visiting {} store(s):".format(num_stores)
         # for each valid store_combination:
-        # print_store_list(store_combination)
+        print_store_combination(chosen_stores)
         pass
     else:
-        # print "No combination of given stores can satisfy this shopping list :("
+        print "No combination of given stores can satisfy this shopping list :("
         pass
 
 
